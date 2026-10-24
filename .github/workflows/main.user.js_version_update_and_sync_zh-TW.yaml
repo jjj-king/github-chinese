@@ -18,9 +18,10 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        if: vars.APP_ID != ''
-        uses: actions/create-github-app-token@v2
+        if: vars.APP_CLIENT_ID != '' || vars.APP_ID != ''
+        uses: actions/create-github-app-token@v3
         with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
@@ -120,14 +121,15 @@ jobs:
 
       - name: Generate token
         id: generate_token
-        if: vars.APP_ID != ''
-        uses: actions/create-github-app-token@v2
+        if: vars.APP_CLIENT_ID != '' || vars.APP_ID != ''
+        uses: actions/create-github-app-token@v3
         with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Cache apt packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             /var/cache/apt/archives/*.deb

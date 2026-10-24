@@ -8,7 +8,7 @@ on:
       - 'script/**'
       - 'tests/**'
       - 'package*.json'
-      - '.github/workflows/test-userscripts.yml'
+      - '.github/workflows/**'
   pull_request:
   workflow_dispatch:
 

@@ -12,34 +12,35 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        uses: actions/create-github-app-token@v1
+        if: vars.APP_CLIENT_ID != '' || vars.APP_ID != ''
+        uses: actions/create-github-app-token@v3
         with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Generate Contributors Images
-        uses: jaywcjlove/github-action-contributors@v1.3.5
+        uses: jaywcjlove/github-action-contributors@v2.1.0
         id: contributors
         with:
           filter-author: (action-assistant\[bot\]|renovate\[bot\]|renovate-bot|@github-actions-bot|dependabot\[bot\]|ImgBotApp|imgbot\[bot\])
           avatarSize: 42
 
       - name: Modify README.md
+        env:
+          CONTRIBUTORS_HTML: ${{ steps.contributors.outputs.htmlList }}
         run: |
-          escapedHtmlList=$(echo -e '${{steps.contributors.outputs.htmlList}}' | sed ':a;N;$!ba;s/\n/\\n/g;s/\\n$//')
-          openDelimiter='<!--AUTO_GENERATED_PLEASE_DONT_DELETE_IT-->'
-          closeDelimiter='<!--AUTO_GENERATED_PLEASE_DONT_DELETE_IT-END-->'
-          sed -i "/$openDelimiter/,/$closeDelimiter/c\\$openDelimiter$escapedHtmlList$closeDelimiter" README.md
+          node script/update-contributors.mjs README.md
           git diff --quiet --exit-code README.md || echo "CHANGES_DETECTED=true" >> $GITHUB_ENV
 
       - name: Commit and push README.md
         if: ${{ env.CHANGES_DETECTED == 'true' }}
         env:
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          APP_SLUG: ${{ steps.generate_token.outputs.app-slug }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token || github.token }}
+          APP_SLUG: ${{ steps.generate_token.outputs.app-slug || 'github-actions' }}
         run: |
           bash script/ci_commit_with_signature.sh \
           -R "${{ github.repository }}" \
