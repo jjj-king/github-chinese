@@ -1,0 +1,58 @@
+name: Delete requested historical failures (one time)
+on:
+  push:
+    branches: [gh-pages]
+    paths: ['.github/workflows/cleanup-failed-runs.yml']
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    if: github.repository == 'jjj-king/github-chinese' && github.ref == 'refs/heads/gh-pages'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Delete only the 19 requested failed runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError
+          
+          repo = os.environ['GITHUB_REPOSITORY']
+          if repo != 'jjj-king/github-chinese':
+              raise SystemExit('Unexpected repository; no runs were deleted.')
+          run_ids = [30211968327,30028665722,29696144914,29518670581,29201402715,29038520535,28748721354,28610012914,28330024476,28190515039,27912438609,27780550738,27506506472,27369614657,27099580558,26970601255,26719189476,26594430099,26367603630]
+          headers = {
+              'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2026-03-10',
+          }
+          deleted = 0
+          for run_id in run_ids:
+              url = os.environ['GITHUB_API_URL'] + '/repos/' + repo + '/actions/runs/' + str(run_id)
+              try:
+                  with urlopen(Request(url, headers=headers), timeout=30) as response:
+                      run = json.load(response)
+              except HTTPError as error:
+                  if error.code == 404:
+                      print('Already absent:', run_id)
+                      continue
+                  raise
+              if run.get('id') != run_id or run.get('repository', {}).get('full_name') != repo:
+                  raise SystemExit('Run identity mismatch; refusing deletion.')
+              if run.get('status') != 'completed' or run.get('conclusion') != 'failure':
+                  print('Preserved run with changed status:', run_id)
+                  continue
+              with urlopen(Request(url, headers=headers, method='DELETE'), timeout=30) as response:
+                  if response.status != 204:
+                      raise SystemExit('Unexpected delete response for run ' + str(run_id))
+              deleted += 1
+              print('Deleted failed run:', run_id)
+          print('Deleted', deleted, 'of', len(run_ids), 'requested historical failures.')
+          PY
