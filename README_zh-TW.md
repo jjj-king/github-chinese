@@ -24,6 +24,20 @@
 
 </div>
 
+## 本倉庫修復版（2026-10-24）
+
+本Fork保留上游作者及GPL-3.0授權，修復偶發不漢化、動態頁面漏譯，以及安裝與更新網址仍指向上游等問題。目前版本為`1.9.4-2026-10-24`。
+
+- [安裝本倉庫繁體修復版](https://raw.githubusercontent.com/jjj-king/github-chinese/gh-pages/main_zh-TW.user.js)。請在腳本管理器中更新或取代舊版，再重新整理GitHub；只啟用一個語言版本。
+- Chrome/Edge請在擴充功能詳細資料中開啟「允許使用者指令碼」，或開啟「開發人員模式」。[官方說明](https://www.tampermonkey.net/faq.php#Q209)。
+- 新增「重新翻譯目前頁面」選單，支援延遲載入、Turbo/React頁面切換、替換body及動態控制項。正文、程式碼與編輯器草稿保持原樣；詞庫未收錄的文案保留原文。
+- 詞庫仍須透過`@require`成功下載。介面翻譯在本機完成；「簡介翻譯」僅在手動點擊後使用既有第三方服務。
+- 本次未變更詞庫內容，也不自動合併上游。簡體、穩定入口及繁體入口共用`script/runtime.js`，以免修正不同步。
+
+開發驗證需要Node.js 24以上版本。執行`npm ci`、`npm run check`、`npm test`；修改共用執行程式後以`npm run build`產生三個入口。發佈時可使用`node script/sync-runtime.mjs --version=新的版本號`。測試模擬DOM與腳本管理器API，不會登入GitHub或傳送翻譯請求。
+
+詞庫版本工作流程未設定`APP_ID`時會使用自帶的`GITHUB_TOKEN`，已設定App時繼續使用原App。工作流程須啟用並允許寫入儲存庫；公開儲存庫的排程仍受GitHub無活動停用規則影響。完整說明見[簡體README](./README.md)。
+
 > [!warning]
 > 本項目從未發佈至 GitCode，如您發現請截圖並保留證據
 
@@ -68,13 +82,13 @@ Via（Android）       | 內置管理器
 
 1. 安裝用戶腳本管理器：
     - 推薦：[Tampermonkey][Tampermonkey]
-1. **開啟瀏覽器 “擴展程序” 管理中的 “開發者模式”[^1]**
+1. **Chrome/Edge：開啟「允許使用者指令碼」，或開啟「開發人員模式」[^1]。**
 1. 選擇安裝源：
-    - [GitHub 源【開發版】][main_zh-TW.user.js]
+    - [本倉庫繁體入口][main_zh-TW.user.js]
 1. 刷新頁面後，插件即可生效
 1. 必要時，重啟瀏覽器
 
-[^1]: [Chrome 切換到 Manifest V3後，使用問題](https://github.com/maboloshi/github-chinese/issues/234)
+[^1]: [Tampermonkey使用者指令碼執行權限說明](https://www.tampermonkey.net/faq.php#Q209)
 
 > [!NOTE]
 > **版本說明**：
@@ -407,5 +421,5 @@ GitHub 的 ajax 載入方式逐步從 [defunkt/jquery-pjax](https://github.com/d
 [Violentmonkey]: https://violentmonkey.github.io/ "暴力猴"
 [Macaque]: https://macaque.app/ "獼猴"
 [Stay]: https://apps.apple.com/cn/app/stay-for-safari-%E6%B5%8F%E8%A7%88%E5%99%A8%E4%BC%B4%E4%BE%A3/id1591620171 "Stay"
-[main_zh-TW.user.js]: https://github.com/maboloshi/github-chinese/raw/gh-pages/main_zh-TW.user.js "GitHub 中文化插件（繁體版） - GitHub 託管"
+[main_zh-TW.user.js]: https://raw.githubusercontent.com/jjj-king/github-chinese/gh-pages/main_zh-TW.user.js "GitHub 中文化插件（繁體版） - GitHub 託管"
 [update-contributors-images]: https://github.com/maboloshi/github-chinese/blob/gh-pages/.github/workflows/update_contributors_images.yml

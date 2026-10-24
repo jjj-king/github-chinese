@@ -1,0 +1,30 @@
+name: Test userscript runtime
+
+on:
+  push:
+    paths:
+      - '*.user.js'
+      - 'locals*.js'
+      - 'script/**'
+      - 'tests/**'
+      - 'package*.json'
+      - '.github/workflows/test-userscripts.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run check
+      - run: npm test

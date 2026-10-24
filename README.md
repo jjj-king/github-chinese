@@ -24,6 +24,24 @@
 
 </div>
 
+## 本仓库修复版（2026-10-24）
+
+本Fork保留上游作者及GPL-3.0许可，针对偶发不汉化、动态页面漏译和更新地址指向上游的问题进行了修复。当前版本为`1.9.4-2026-10-24`。
+
+- **安装本仓库修复版**：[简体版](https://raw.githubusercontent.com/jjj-king/github-chinese/gh-pages/main.user.js) · [繁体版](https://raw.githubusercontent.com/jjj-king/github-chinese/gh-pages/main_zh-TW.user.js)。脚本、词库和自动更新地址都指向本Fork。
+- 浏览器中的脚本不会因为GitHub仓库提交代码就立即改变。请打开上述链接，在脚本管理器中更新/替换现有版本，再刷新GitHub。只启用一个语言版本，避免重复脚本竞争修改页面。
+- Chrome/Edge用户请核对Tampermonkey的用户脚本执行权限：在扩展详情里开启“允许用户脚本”；没有该选项时检查“开发者模式”。[官方说明](https://www.tampermonkey.net/faq.php#Q209)。
+- 新增“重新翻译当前页面”菜单；支持晚加载、Turbo/React页面跳转、替换body以及动态控件属性变化。正文、代码、编辑器草稿保持原样。词库中没有的文案会保留原文。
+- `@require`词库仍需要成功下载。加载失败时应先检查脚本管理器的错误记录；界面翻译在本地完成，“简介翻译”仅在手动点击后使用第三方服务。
+- 修复版没有改变词库内容，也不自动合并上游仓库。需要新词条时可更新`locals.js`，再提高脚本版本以刷新脚本管理器缓存。
+
+### 开发与验证
+
+安装Node.js 24及以上版本，执行`npm ci`、`npm run check`、`npm test`。统一运行时代码在`script/runtime.js`中，执行`npm run build`生成三个入口；发布时可执行`node script/sync-runtime.mjs --version=新的版本号`。测试使用jsdom模拟DOM、脚本管理器API与网络响应，不会登录GitHub或发送简介翻译请求。
+
+词库版本工作流在未配置`APP_ID`时使用自带的`GITHUB_TOKEN`，不必为了本Fork另外创建GitHub App。已配置App的仓库继续使用原App。工作流需处于启用状态，仓库Actions也需允许写入内容；公开仓库的定时任务仍受GitHub无活动停用规则影响。
+
+
 > [!warning]
 > 本项目从未发布至 GitCode，如您发现请截图并保留证据
 
@@ -65,19 +83,19 @@ Via（Android）       | 内置管理器
 
 1. 安装用户脚本管理器：
     - 推荐：[Tampermonkey][Tampermonkey]
-1. **Chrome / Chromium 内核浏览器，请务必开启 “扩展程序” 管理中的 “开发者模式”[^1]**
+1. **Chrome/Edge：在扩展详情中开启“允许用户脚本”，或开启“开发者模式”[^1]。**
 1. 选择安装源：
-    - [GitHub 源【开发版】][main.user.js]
-    - [GreasyFork 源【稳定版】][main(greasyfork).user.js]
+    - [本仓库简体入口][main.user.js]
+    - [本仓库稳定入口][main(greasyfork).user.js]
 1. 刷新页面后，插件即可生效
 1. 必要时，重启浏览器
 
-[^1]: [Chrome 切换到 Manifest V3后，使用问题](https://github.com/maboloshi/github-chinese/issues/234)
+[^1]: [Tampermonkey用户脚本执行权限说明](https://www.tampermonkey.net/faq.php#Q209)
 
 > [!NOTE]
 > **版本说明**：
-> - 🚀 开发版：实时更新，每周五自动更新词库
-> - 🛡️ 稳定版：每周一同步开发版词库，更稳定
+> - 开发入口：按工作流整理本仓库已提交的词库版本，不自动拉取上游。
+> - 稳定入口：同步最近一次发布的词库快照。只有处于启用状态的工作流才会执行。
 
 ## 🔧 本地调试
 
@@ -135,8 +153,8 @@ Via（Android）       | 内置管理器
 1. 重新定义版本号规则, 如`1.9.0-2023-12-09`。
    - `1.9.0`: 主版本号（由项目所有者更新）
    - `2023-12-09`：`词库`发布版本号（由 GitHub Action 自动更新）
-1. 加强: [GitHub 源【开发版】][main.user.js]每周一凌晨自动更新`词库`发布版本号
-1. 加强: [GreasyFork 源【稳定版】][main(greasyfork).user.js]每周五凌晨自动更新`词库`发布版本号, 词库内容同上一次[GitHub 源【开发版】][main.user.js]
+1. 加强: [本仓库简体入口][main.user.js]每周一凌晨自动更新`词库`发布版本号
+1. 加强: [本仓库稳定入口][main(greasyfork).user.js]每周五凌晨自动更新`词库`发布版本号, 词库内容同上一次[本仓库简体入口][main.user.js]
 1. 加强：在 `README.md` 中自动更新贡献者头像
 1. 更新: 忽略规则, 词条等
 
@@ -414,6 +432,6 @@ GitHub 的 ajax 载入方式逐步从 [defunkt/jquery-pjax](https://github.com/d
 [Violentmonkey]: https://violentmonkey.github.io/ "暴力猴"
 [Macaque]: https://macaque.app/ "猕猴"
 [Stay]: https://apps.apple.com/cn/app/stay-for-safari-%E6%B5%8F%E8%A7%88%E5%99%A8%E4%BC%B4%E4%BE%A3/id1591620171 "Stay"
-[main.user.js]: https://github.com/maboloshi/github-chinese/raw/gh-pages/main.user.js "GitHub 中文化插件 - GitHub 源"
-[main(greasyfork).user.js]: https://greasyfork.org/scripts/435208-github-%E4%B8%AD%E6%96%87%E5%8C%96%E6%8F%92%E4%BB%B6/code/GitHub%20%E4%B8%AD%E6%96%87%E5%8C%96%E6%8F%92%E4%BB%B6.user.js "GitHub 中文化插件 - GreasyFork 源"
+[main.user.js]: https://raw.githubusercontent.com/jjj-king/github-chinese/gh-pages/main.user.js "GitHub 中文化插件 - GitHub 源"
+[main(greasyfork).user.js]: https://raw.githubusercontent.com/jjj-king/github-chinese/gh-pages/main%28greasyfork%29.user.js "GitHub 中文化插件 - GreasyFork 源"
 [update-contributors-images]: https://github.com/maboloshi/github-chinese/blob/gh-pages/.github/workflows/update_contributors_images.yml

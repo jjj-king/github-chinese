@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -eo pipefail
+changed_files=()
+deleted_files=()
+
 while getopts ":T:R:B:P:F:D:h:b:" opt; do
     case $opt in
         T)
@@ -79,72 +83,36 @@ function set_dco_signature {
     echo "Signed-off-by: ${name:-$login} <$id+$login@users.noreply.github.com>"
 }
 
-message_body="${message_body:+$message_body\n}$(set_dco_signature)"
+signature=$(set_dco_signature)
+message_body="${message_body:-}"
+if [[ -n $message_body ]]; then message_body+=$'\n'; fi
+message_body+="$signature"
 
-# 处理文件修改并构建 fileChanges 部分中 additions 的 JSON 字符串
-# Process the file changes and build the JSON string of `additions` in the `fileChanges` section
-changed_files_json=""
-for file_path in "${changed_files[@]}"; do
-    changed_files_json+="{
-            \"path\": \"$file_path\",
-            \"contents\": \"$(base64 < "$file_path")\"
-          },
-          "
-done
-changed_files_json="${changed_files_json%,
-          }"  # 移除最后一个逗号及换行符和空格
-              # Remove last comma and line breaks and spaces
+# Serialize JSON and base64 without line wrapping. Preserve quotes, Unicode,
+# optional deletions and DCO newlines instead of hand-assembling JSON strings.
+python3 - "$repoNwo" "$branch" "$parentSHA" "$message_headline" "$message_body" \
+  "${#changed_files[@]}" "${changed_files[@]}" "${deleted_files[@]}" > request.json <<'REQUEST_PY'
+import base64
+import json
+from pathlib import Path
+import sys
 
-# 处理文件删除并构建 fileChanges 部分中 deletions 的 JSON 字符串
-# Process the file deletions and build the JSON string of `deletions` in the `fileChanges` section
-deleted_files_json=""
-for file_path in "${deleted_files[@]}"; do
-    deleted_files_json+="{
-            \"path\": \"$file_path\",
-          },
-          "
-done
-deleted_files_json="${deleted_files_json%,
-          }"  # 移除最后一个逗号及换行符和空格
-              # Remove last comma and line breaks and spaces
-
-# 构建 GraphQL 请求的 JSON 字符串
-# Construct JSON string for GraphQL request
-graphql_request='{
-  "query": "mutation ($input: CreateCommitOnBranchInput!) {
-    createCommitOnBranch(input: $input) {
-      commit {
-        oid,
-        url
-      }
-    }
-  }",
-  "variables": {
-    "input": {
-      "branch": {
-        "repositoryNameWithOwner": "'"$repoNwo"'",
-        "branchName": "'"$branch"'"
-      },
-      "message": {
-        "headline": "'"$message_headline"'",
-        "body": "'"$message_body"'"
-      },
-      "fileChanges": {
-        "additions": [
-          '"$changed_files_json"'
-        ],
-        "deletions": [
-          '"$deleted_files_json"'
-        ]
-      },
-      "expectedHeadOid": "'"$parentSHA"'"
-    }
-  }
-}'
-
-# 将请求数据写入 request.json 文件
-# Write the request data to the `request.json` file
-echo "$graphql_request" > request.json
+repo, branch, parent, headline, body, count, *paths = sys.argv[1:]
+count = int(count)
+payload = {
+    "query": "mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid url } } }",
+    "variables": {"input": {
+        "branch": {"repositoryNameWithOwner": repo, "branchName": branch},
+        "message": {"headline": headline, "body": body},
+        "fileChanges": {
+            "additions": [{"path": path, "contents": base64.b64encode(Path(path).read_bytes()).decode("ascii")} for path in paths[:count]],
+            "deletions": [{"path": path} for path in paths[count:]],
+        },
+        "expectedHeadOid": parent,
+    }},
+}
+json.dump(payload, sys.stdout, ensure_ascii=False)
+REQUEST_PY
 
 # 发送 GraphQL 请求并解析结果
 # Send GraphQL requests and parse the results
@@ -168,3 +136,6 @@ jq -r '
             "⚠️ 未知响应格式: \(.)"
         end
     end' <<< "$response"
+
+# HTTP 200 does not imply GraphQL success. Fail the workflow on API errors.
+jq -e '.data.createCommitOnBranch.commit.oid | strings | select(length == 40)' <<< "$response" > /dev/null
